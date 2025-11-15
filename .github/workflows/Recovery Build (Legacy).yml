@@ -37,10 +37,6 @@ on:
         description: 'MAKEFILE_NAME'
         required: true
         default: 'omni_oppo6765_19181'
-      BUILD_TARGET:
-        description: 'BUILD_TARGET'
-        required: true
-        default: 'recovery'
       TWRP_VERSION:
         description: 'TWRP_VERSION (tag/branch/commit to pin bootable/recovery & vendor/twrp)'
         required: true
@@ -63,7 +59,7 @@ jobs:
         echo "Device Path: ${{ github.event.inputs.DEVICE_PATH }}"
         echo "Device Name: ${{ github.event.inputs.DEVICE_NAME }}"
         echo "Makefile Name: ${{ github.event.inputs.MAKEFILE_NAME }}"
-        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}.img"
+        echo "Build Target: recovery.img"
         echo "TWRP Version Ref: ${{ github.event.inputs.TWRP_VERSION }}"
         echo "::endgroup::"
 
@@ -207,16 +203,16 @@ jobs:
         echo "___________________________________"
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ github.event.inputs.MAKEFILE_NAME }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
+        lunch ${{ github.event.inputs.MAKEFILE_NAME }}-eng && make clean && make recoveryimage -j$(nproc --all)
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
       shell: bash
 
     - name: Versioned artifacts
       run: |
         OUTDIR="${{ steps.pwd.outputs.workspace-folder }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}"
-        IMG="$OUTDIR/${{ github.event.inputs.BUILD_TARGET }}.img"
+        IMG="$OUTDIR/recovery.img"
         if [ -f "$IMG" ]; then
-          cp "$IMG" "$OUTDIR/${{ github.event.inputs.BUILD_TARGET }}_${{ github.event.inputs.TWRP_VERSION }}.img"
+          cp "$IMG" "$OUTDIR/recovery_${{ github.event.inputs.TWRP_VERSION }}.img"
         fi
 
     
@@ -224,8 +220,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: | 
-          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img
-          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}_${{ github.event.inputs.TWRP_VERSION }}.img
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery.img
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery_${{ github.event.inputs.TWRP_VERSION }}.img
           workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
           workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*vendor*.img
         name: ${{ github.event.inputs.DEVICE_NAME }}-${{ github.event.inputs.TWRP_VERSION }}-${{ github.run_id }}
@@ -233,7 +229,7 @@ jobs:
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
           Device: ${{ github.event.inputs.DEVICE_NAME }}
-          Target: ${{ github.event.inputs.BUILD_TARGET }}.img
+          Target: recovery.img
           TWRP Version: ${{ github.event.inputs.TWRP_VERSION }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
